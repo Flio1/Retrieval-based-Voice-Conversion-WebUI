@@ -1,0 +1,456 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>RVC Mission Control</title>
+<style>
+  /* ---------- Token-System: Studio-Konsole ---------- */
+  :root {
+    --ground: #F0F1F3;
+    --panel: #FFFFFF;
+    --panel-2: #E8EAED;
+    --line: #D9DDE2;
+    --ink: #1D242C;
+    --muted: #5C6670;
+    --signal: #9A6A14;        /* Datenfarbe, validiert auf hellem Grund */
+    --signal-text: #8A5E10;
+    --ok: #2E7D4F;
+    --crit: #B3402F;
+    --led-glow: rgba(46,125,79,.35);
+    --shadow: 0 1px 3px rgba(29,36,44,.08);
+    --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #14181D;
+      --panel: #1B2129;
+      --panel-2: #222933;
+      --line: #2A323C;
+      --ink: #E7EAEE;
+      --muted: #97A1AC;
+      --signal: #C08430;      /* Datenfarbe, validiert auf dunklem Grund */
+      --signal-text: #E3A94E;
+      --ok: #57B47F;
+      --crit: #E0685B;
+      --led-glow: rgba(87,180,127,.35);
+      --shadow: 0 1px 3px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #F0F1F3; --panel: #FFFFFF; --panel-2: #E8EAED; --line: #D9DDE2;
+    --ink: #1D242C; --muted: #5C6670; --signal: #9A6A14; --signal-text: #8A5E10;
+    --ok: #2E7D4F; --crit: #B3402F; --led-glow: rgba(46,125,79,.35);
+    --shadow: 0 1px 3px rgba(29,36,44,.08);
+  }
+  :root[data-theme="dark"] {
+    --ground: #14181D; --panel: #1B2129; --panel-2: #222933; --line: #2A323C;
+    --ink: #E7EAEE; --muted: #97A1AC; --signal: #C08430; --signal-text: #E3A94E;
+    --ok: #57B47F; --crit: #E0685B; --led-glow: rgba(87,180,127,.35);
+    --shadow: 0 1px 3px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: var(--sans); font-size: 15px; line-height: 1.55;
+  }
+  a { color: var(--signal-text); }
+
+  /* ---------- Transportleiste ---------- */
+  .transport {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; flex-wrap: wrap; align-items: center; gap: .7rem 1.4rem;
+    padding: .65rem 1.4rem;
+    background: var(--panel); border-bottom: 1px solid var(--line);
+    font-family: var(--mono); font-size: .78rem;
+  }
+  .transport .brand { font-weight: 700; letter-spacing: .1em; font-size: .85rem; }
+  .transport .brand span { color: var(--signal-text); }
+  .transport .cell { display: flex; align-items: center; gap: .45rem; color: var(--muted); }
+  .transport .cell strong { color: var(--ink); font-weight: 600; }
+  .transport .spacer { flex: 1; }
+  .led {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--ok); box-shadow: 0 0 6px 1px var(--led-glow);
+    flex: none;
+  }
+  .led.pulse { animation: pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
+  @media (prefers-reduced-motion: reduce) { .led.pulse { animation: none; } }
+
+  /* ---------- Rack-Raster ---------- */
+  .rack {
+    max-width: 1180px; margin: 0 auto; padding: 1.4rem;
+    display: grid; grid-template-columns: repeat(12, 1fr); gap: 1rem;
+  }
+  .module {
+    grid-column: span 12;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  @media (min-width: 780px) {
+    .m6 { grid-column: span 6; }
+    .m7 { grid-column: span 7; }
+    .m5 { grid-column: span 5; }
+    .m8 { grid-column: span 8; }
+    .m4 { grid-column: span 4; }
+  }
+  .module > header {
+    display: flex; align-items: center; gap: .6rem;
+    padding: .55rem .95rem;
+    border-bottom: 1px solid var(--line); background: var(--panel-2);
+    font-family: var(--mono); font-size: .72rem; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+  }
+  .module > header .tag { margin-left: auto; letter-spacing: .04em; font-weight: 400; }
+  .module .body { padding: .95rem; flex: 1; }
+
+  /* ---------- Kacheln ---------- */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: .7rem; }
+  .tile {
+    border: 1px solid var(--line); border-radius: 5px;
+    padding: .6rem .75rem; background: var(--ground);
+  }
+  .tile .k {
+    font-family: var(--mono); font-size: .66rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .tile .v {
+    font-family: var(--mono); font-size: 1.55rem; font-weight: 700;
+    font-variant-numeric: tabular-nums; line-height: 1.25;
+  }
+  .tile .s { font-size: .72rem; color: var(--muted); }
+  .tile .s.good { color: var(--ok); }
+  .tile .s.bad { color: var(--crit); }
+
+  /* ---------- Waveform-Chart ---------- */
+  .wave-wrap { position: relative; }
+  .wave {
+    display: flex; align-items: center; gap: 3px;
+    height: 150px; padding: 0 2px;
+    border-bottom: 1px solid var(--line);
+  }
+  .wave .bar-hit {
+    flex: 1; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; min-width: 14px; cursor: default;
+  }
+  .wave .bar {
+    width: 62%; max-width: 18px; min-height: 3px;
+    background: var(--signal); border-radius: 4px;
+  }
+  .wave .bar.floor { background: var(--line); }
+  .wave .bar-hit:hover .bar, .wave .bar-hit:focus-visible .bar { filter: brightness(1.18); }
+  .wave .bar-hit:focus-visible { outline: 2px solid var(--signal-text); outline-offset: -2px; border-radius: 4px; }
+  .wave .peak {
+    position: absolute; top: 2px; left: 50%; transform: translateX(-50%);
+    font-family: var(--mono); font-size: .68rem; color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .wave-x { display: flex; gap: 3px; padding: .3rem 2px 0; }
+  .wave-x span {
+    flex: 1; min-width: 14px; text-align: center;
+    font-family: var(--mono); font-size: .62rem; color: var(--muted);
+    white-space: nowrap;
+  }
+  .tooltip {
+    position: absolute; z-index: 30; pointer-events: none;
+    background: var(--ink); color: var(--ground);
+    font-family: var(--mono); font-size: .72rem;
+    padding: .3rem .55rem; border-radius: 4px;
+    transform: translate(-50%, calc(-100% - 8px));
+    white-space: nowrap; display: none;
+  }
+
+  /* ---------- Balkenlisten ---------- */
+  .hbars { display: flex; flex-direction: column; gap: .55rem; }
+  .hbar { display: grid; grid-template-columns: 9.5em 1fr 3.2em; align-items: center; gap: .7rem; }
+  .hbar .lbl {
+    font-family: var(--mono); font-size: .76rem;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .hbar .track { height: 10px; background: var(--ground); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  .hbar .fill { height: 100%; background: var(--signal); border-radius: 3px; min-width: 2px; }
+  .hbar .num {
+    font-family: var(--mono); font-size: .76rem; text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- Commit-Feed ---------- */
+  .feed { display: flex; flex-direction: column; }
+  .commit {
+    display: flex; gap: .8rem; align-items: baseline;
+    padding: .5rem 0; border-bottom: 1px dashed var(--line);
+  }
+  .commit:last-child { border-bottom: none; }
+  .commit .sha {
+    font-family: var(--mono); font-size: .74rem; color: var(--signal-text);
+    background: var(--ground); border: 1px solid var(--line);
+    border-radius: 4px; padding: .05rem .4rem; flex: none;
+  }
+  .commit .msg { flex: 1; font-size: .86rem; min-width: 0; }
+  .commit .meta { font-family: var(--mono); font-size: .68rem; color: var(--muted); flex: none; }
+
+  /* ---------- Autonomie-Konsole ---------- */
+  .checks { display: flex; flex-direction: column; gap: .45rem; margin: 0; padding: 0; list-style: none; }
+  .checks li { display: flex; gap: .6rem; align-items: baseline; font-size: .85rem; }
+  .checks .led { position: relative; top: 1px; }
+  .checks small { color: var(--muted); }
+  .runlog { font-family: var(--mono); font-size: .74rem; margin: 0; padding: 0; list-style: none; }
+  .runlog li {
+    display: flex; gap: .8rem; padding: .35rem 0;
+    border-bottom: 1px dashed var(--line);
+  }
+  .runlog li:last-child { border-bottom: none; }
+  .runlog .t { color: var(--muted); flex: none; }
+  .runlog .ok-word { color: var(--ok); }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: .3rem 1rem; font-size: .84rem; }
+  .kv dt { color: var(--muted); font-family: var(--mono); font-size: .74rem; padding-top: .1rem; }
+  .kv dd { margin: 0; }
+  .badge {
+    display: inline-block; font-family: var(--mono); font-size: .68rem;
+    border: 1px solid var(--line); border-radius: 4px;
+    padding: .08rem .45rem; color: var(--muted); background: var(--ground);
+  }
+  .foot {
+    max-width: 1180px; margin: 0 auto; padding: 0 1.4rem 2rem;
+    color: var(--muted); font-size: .78rem;
+  }
+  .overflow { overflow-x: auto; }
+</style>
+
+<div class="transport">
+  <span class="led pulse" id="sysLed"></span>
+  <span class="brand">RVC <span>MISSION CONTROL</span></span>
+  <span class="cell">REPO <strong>Flio1/Retrieval-based-Voice-Conversion-WebUI</strong></span>
+  <span class="spacer"></span>
+  <span class="cell">DATENSTAND <strong id="freshness">–</strong></span>
+  <span class="cell">AUTO-REFRESH <strong>alle 2 h</strong></span>
+</div>
+
+<div class="rack">
+
+  <!-- PULS -->
+  <section class="module">
+    <header><span class="led"></span> Puls &middot; Repo-Vitalwerte <span class="tag" id="stampTag"></span></header>
+    <div class="body"><div class="tiles" id="tiles"></div></div>
+  </section>
+
+  <!-- SIGNAL -->
+  <section class="module m7">
+    <header><span class="led"></span> Signal &middot; Commit-Aktivität je Monat</header>
+    <div class="body">
+      <div class="wave-wrap">
+        <div class="wave" id="wave" role="img" aria-label="Commit-Aktivität je Monat als Wellenform"></div>
+        <div class="wave-x" id="waveX"></div>
+        <div class="tooltip" id="tip"></div>
+      </div>
+      <p style="font-size:.78rem;color:var(--muted);margin:.7rem 0 0">
+        Sichtbare Historie des Klons (shallow) &mdash; 109 Commits seit Okt 2023.
+        Letzter Commit auf <code>main</code>: <span id="staleness">–</span>.
+      </p>
+    </div>
+  </section>
+
+  <!-- FORK-STATUS -->
+  <section class="module m5">
+    <header><span class="led"></span> Fork-Status</header>
+    <div class="body">
+      <dl class="kv">
+        <dt>UPSTREAM</dt><dd>RVC-Boss/Retrieval-based-Voice-Conversion-WebUI</dd>
+        <dt>HEAD (main)</dt><dd><span class="badge" id="headSha"></span> <span id="headDate"></span></dd>
+        <dt>BRANCHES</dt><dd id="branchList"></dd>
+        <dt>DRIFT</dt><dd>Upstream-Abstand unbekannt &mdash; das Upstream-Repo liegt außerhalb des Zugriffs-Scopes dieser Session.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- FEED -->
+  <section class="module m7">
+    <header><span class="led"></span> Feed &middot; Letzte Commits</header>
+    <div class="body overflow"><div class="feed" id="feed"></div></div>
+  </section>
+
+  <!-- AUTONOMIE -->
+  <section class="module m5">
+    <header><span class="led pulse"></span> Autonomie-Konsole</header>
+    <div class="body">
+      <ul class="checks">
+        <li><span class="led"></span><span>Git-Sync <small>&mdash; holt <code>origin/main</code> und erkennt neue Commits</small></span></li>
+        <li><span class="led"></span><span>PR-Radar <small>&mdash; überwacht offene Pull Requests</small></span></li>
+        <li><span class="led"></span><span>Issue-Radar <small>&mdash; überwacht offene Issues</small></span></li>
+        <li><span class="led"></span><span>CI-Wächter <small>&mdash; prüft GitHub-Actions-Läufe auf Fehlschläge</small></span></li>
+        <li><span class="led"></span><span>Redeploy <small>&mdash; baut dieses Dashboard neu und veröffentlicht es unter derselben URL</small></span></li>
+      </ul>
+      <p style="font-size:.78rem;color:var(--muted);margin:.8rem 0 .4rem">
+        Läuft alle 2 Stunden als geplanter Trigger in der Cloud-Session. Meldet sich nur bei
+        Auffälligkeiten (neuer PR, neues Issue, rote CI) &mdash; sonst aktualisiert es still.
+      </p>
+      <header style="all:unset;display:block;font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:.9rem 0 .3rem">Run-Log</header>
+      <ul class="runlog" id="runlog"></ul>
+    </div>
+  </section>
+
+  <!-- ANATOMIE -->
+  <section class="module m6">
+    <header><span class="led"></span> Anatomie &middot; Dateien je Typ</header>
+    <div class="body"><div class="hbars" id="langs"></div></div>
+  </section>
+
+  <!-- CREW -->
+  <section class="module m6">
+    <header><span class="led"></span> Crew &middot; Top-Contributor (sichtbare Historie)</header>
+    <div class="body"><div class="hbars" id="crew"></div></div>
+  </section>
+
+</div>
+
+<p class="foot">
+  Dieses Dashboard wird autonom von einer Claude-Cloud-Session gepflegt: Quelle liegt im Branch
+  <code>claude/cloud-artifact-automation-8wkkbl</code> unter <code>cloud-dashboard/</code>,
+  Datenerhebung via Git &amp; GitHub-API, Redeploy alle 2 Stunden unter gleichbleibender URL.
+</p>
+
+<script>
+/* ==DATA:BEGIN== */
+const DATA = {
+  generatedAt: "2026-09-24T14:23:02Z",
+  head: { sha: "7ef1986", date: "2024-11-24", iso: "2024-11-24T15:09:44Z",
+          msg: "Add warnings for files related to Onnx exports (#2385)" },
+  stats: {
+    openPRs: 0, openIssues: 0, ciRuns: 0,
+    branches: ["main", "v1", "claude/cloud-artifact-automation-8wkkbl"],
+    files: 219, loc: 35673, commitsVisible: 109, pyFiles: 86
+  },
+  activity: [
+    ["2023-10", 4], ["2023-11", 7], ["2023-12", 29], ["2024-01", 29],
+    ["2024-02", 1], ["2024-03", 5], ["2024-04", 0], ["2024-05", 0],
+    ["2024-06", 12], ["2024-07", 7], ["2024-08", 8], ["2024-09", 3],
+    ["2024-10", 0], ["2024-11", 4]
+  ],
+  commits: [
+    ["7ef1986", "2024-11-24", "Naruse", "Add warnings for files related to Onnx exports (#2385)"],
+    ["709bbba", "2024-11-24", "yxlllc", "optimize nsf inference (#2387)"],
+    ["1376ce7", "2024-11-24", "Naruse", "Fix onnx export & Support TensorRT (#2384)"],
+    ["9ae3af4", "2024-11-23", "纸巾", "移除音频文件路径 Unicode 控制字符 (#2334)"],
+    ["3548b4f", "2024-09-05", "RVC-Boss", "Update requirements-ipex.txt"],
+    ["cfc1e24", "2024-08-28", "Coming", "fix: dlmodels.sh exits after download single file (#2175)"],
+    ["b405aed", "2024-08-28", "Dafterfly", "Translate Chinese text in English README (#2172)"],
+    ["7e3965c", "2024-08-28", "pato-pan", "Update requirements.txt (#2203)"]
+  ],
+  langs: [
+    ["Python", 86], ["JSON", 43], ["Markdown", 36], ["Skripte (sh/bat)", 8],
+    ["YAML", 7], ["Text", 7], ["Notebooks", 2], ["Assets/Sonstige", 30]
+  ],
+  crew: [
+    ["RVC-Boss", 44], ["github-actions[bot]", 15], ["源文雨", 13],
+    ["yxlllc", 6], ["Freidrichin", 3], ["dependabot[bot]", 3]
+  ],
+  runlog: [
+    ["2026-09-24 14:23 UTC", "Routine-Lauf nach längerer Pause — main unverändert (7ef1986); 0 offene PRs, 0 offene Issues, CI ruhig; Quelldatei im Container neu erzeugt; Push weiterhin 403", "ok"],
+    ["2026-07-17 00:24 UTC", "Routine-Lauf — main unverändert (7ef1986); 0 offene PRs, 0 offene Issues, CI ruhig; Push weiterhin 403", "ok"],
+    ["2026-07-16 22:26 UTC", "Routine-Lauf — main unverändert (7ef1986); Issues 0, CI ruhig; PR-Radar übersprungen: GitHub-API 503 (3 Versuche)", "warn"],
+    ["2026-07-11 01:12 UTC", "Routine-Lauf — main unverändert (7ef1986); PR-/Issue-/CI-Radar übersprungen: GitHub-Anbindung vorübergehend nicht autorisiert", "warn"],
+    ["2026-07-10 18:26 UTC", "Routine-Lauf — keine Änderungen: main unverändert (7ef1986), 0 PRs, 0 Issues, keine CI-Läufe", "ok"],
+    ["2026-07-10 12:27 UTC", "Routine-Lauf — keine Änderungen: main unverändert (7ef1986), 0 PRs, 0 Issues, keine CI-Läufe", "ok"]
+  ]
+};
+/* ==DATA:END== */
+
+const $ = (id) => document.getElementById(id);
+const fmtInt = (n) => n.toLocaleString("de-DE");
+const MONTHS_DE = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+
+/* Kacheln */
+const s = DATA.stats;
+const tiles = [
+  ["Offene PRs", s.openPRs, s.openPRs === 0 ? ["alles ruhig", "good"] : ["braucht Blick", "bad"]],
+  ["Offene Issues", s.openIssues, s.openIssues === 0 ? ["alles ruhig", "good"] : ["braucht Blick", "bad"]],
+  ["CI-Läufe", s.ciRuns, ["keine Workflows aktiv", ""]],
+  ["Branches", s.branches.length, [s.branches.slice(0, 2).join(", ") + " …", ""]],
+  ["Dateien", fmtInt(s.files), ["im Git-Index", ""]],
+  ["Codezeilen", fmtInt(s.loc), ["alle Dateitypen", ""]],
+  ["Python-Dateien", s.pyFiles, ["Kern der Codebase", ""]],
+  ["Commits", s.commitsVisible, ["sichtbare Historie", ""]]
+];
+$("tiles").innerHTML = tiles.map(([k, v, [sub, cls]]) =>
+  `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="s ${cls}">${sub}</div></div>`
+).join("");
+
+/* Waveform */
+const wave = $("wave"), waveX = $("waveX"), tip = $("tip");
+const max = Math.max(...DATA.activity.map(([, v]) => v));
+DATA.activity.forEach(([ym, v], i) => {
+  const hit = document.createElement("div");
+  hit.className = "bar-hit"; hit.tabIndex = 0;
+  const h = v === 0 ? 3 : Math.max(6, Math.round((v / max) * 138));
+  const [y, m] = ym.split("-");
+  const label = MONTHS_DE[+m - 1] + " " + y;
+  hit.innerHTML = `<div class="bar${v === 0 ? " floor" : ""}" style="height:${h}px"></div>` +
+    (v === max ? `<div class="peak">${v}</div>` : "");
+  hit.setAttribute("aria-label", `${label}: ${v} Commits`);
+  const show = () => {
+    tip.textContent = `${label} · ${v} Commits`;
+    tip.style.display = "block";
+    tip.style.left = (hit.offsetLeft + hit.offsetWidth / 2) + "px";
+    tip.style.top = (wave.offsetTop + 34) + "px";
+  };
+  hit.addEventListener("mouseenter", show);
+  hit.addEventListener("focus", show);
+  hit.addEventListener("mouseleave", () => tip.style.display = "none");
+  hit.addEventListener("blur", () => tip.style.display = "none");
+  wave.appendChild(hit);
+  const xl = document.createElement("span");
+  xl.textContent = i % 2 === 0 ? MONTHS_DE[+m - 1] + " " + y.slice(2) : "";
+  waveX.appendChild(xl);
+});
+
+/* Feed */
+$("feed").innerHTML = DATA.commits.map(([sha, d, a, m]) =>
+  `<div class="commit"><span class="sha">${sha}</span><span class="msg">${m}</span><span class="meta">${a} · ${d}</span></div>`
+).join("");
+
+/* Balkenlisten */
+function hbars(el, rows) {
+  const m = Math.max(...rows.map(([, v]) => v));
+  el.innerHTML = rows.map(([k, v]) =>
+    `<div class="hbar"><span class="lbl" title="${k}">${k}</span>` +
+    `<span class="track"><span class="fill" style="width:${(v / m) * 100}%;display:block"></span></span>` +
+    `<span class="num">${v}</span></div>`
+  ).join("");
+}
+hbars($("langs"), DATA.langs);
+hbars($("crew"), DATA.crew);
+
+/* Fork-Status */
+$("headSha").textContent = DATA.head.sha;
+$("headDate").textContent = DATA.head.date + " — „" + DATA.head.msg + "“";
+$("branchList").innerHTML = DATA.stats.branches.map(b => `<span class="badge">${b}</span>`).join(" ");
+
+/* Run-Log */
+$("runlog").innerHTML = DATA.runlog.map(([t, msg, st]) =>
+  `<li><span class="t">${t}</span><span>${st === "ok" ? '<span class="ok-word">OK</span> ' : ""}${msg}</span></li>`
+).join("");
+
+/* Live-Frische: tickt clientseitig, damit der Datenstand ehrlich bleibt */
+function fmtAgo(ms) {
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return "gerade eben";
+  if (min < 60) return `vor ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 48) return `vor ${h} h ${min % 60} min`;
+  return `vor ${Math.floor(h / 24)} Tagen`;
+}
+const gen = new Date(DATA.generatedAt);
+function tickFreshness() {
+  $("freshness").textContent = fmtAgo(Date.now() - gen);
+  const sysOld = Date.now() - gen > 8 * 3600 * 1000; /* > 4 verpasste Zyklen */
+  $("sysLed").style.background = sysOld ? "var(--crit)" : "var(--ok)";
+  $("sysLed").title = sysOld ? "Auto-Refresh überfällig" : "Auto-Refresh aktiv";
+}
+tickFreshness(); setInterval(tickFreshness, 30000);
+$("stampTag").textContent = "Stand " + gen.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" }) + " Uhr";
+const days = Math.floor((Date.now() - new Date(DATA.head.iso)) / 86400000);
+$("staleness").textContent = `vor ${fmtInt(days)} Tagen (${DATA.head.date})`;
+</script>
+
+</body></html>
