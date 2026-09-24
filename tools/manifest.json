@@ -13,6 +13,23 @@
         "stdout": "JSON {files_checked, syntax_errors[{path,line,message}], bare_excepts[], todo_count, ok}",
         "exit_code": "0 = no syntax errors, 1 = syntax errors found"
       }
+    },
+    {
+      "name": "llm_consult",
+      "module": "tools/llm_consult.py",
+      "test": "tools/test_llm_consult.py",
+      "description": "Ask Gemini and/or ChatGPT for a second opinion via their REST APIs (stdlib only). OpenAI is paid and requires --allow-paid.",
+      "inputs": {
+        "prompt": "string, required",
+        "--provider": "gemini | openai | all, default gemini",
+        "--allow-paid": "flag, required to call OpenAI",
+        "env GEMINI_API_KEY": "Google AI Studio key",
+        "env OPENAI_API_KEY": "OpenAI key"
+      },
+      "outputs": {
+        "stdout": "JSON {provider: {ok, text | error}}",
+        "exit_code": "0 = at least one provider answered, 1 = none answered"
+      }
     }
   ]
 }
