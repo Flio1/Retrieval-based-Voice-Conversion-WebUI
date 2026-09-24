@@ -1,0 +1,55 @@
+{
+  "tools": [
+    {
+      "name": "repo_health",
+      "module": "tools/repo_health.py",
+      "test": "tools/test_repo_health.py",
+      "description": "AST-based syntax and hygiene check of all Python files (no imports executed).",
+      "inputs": {
+        "root": "path, default '.'",
+        "--exclude": "list of directory names to skip, default .git venv .venv __pycache__ node_modules"
+      },
+      "outputs": {
+        "stdout": "JSON {files_checked, syntax_errors[{path,line,message}], bare_excepts[], todo_count, ok}",
+        "exit_code": "0 = no syntax errors, 1 = syntax errors found"
+      }
+    },
+    {
+      "name": "llm_consult",
+      "module": "tools/llm_consult.py",
+      "test": "tools/test_llm_consult.py",
+      "description": "Ask Gemini and/or ChatGPT for a second opinion via their REST APIs (stdlib only). OpenAI is paid and requires --allow-paid.",
+      "inputs": {
+        "prompt": "string, required",
+        "--provider": "gemini | openai | all, default gemini",
+        "--allow-paid": "flag, required to call OpenAI",
+        "env GEMINI_API_KEY": "Google AI Studio key",
+        "env OPENAI_API_KEY": "OpenAI key"
+      },
+      "outputs": {
+        "stdout": "JSON {provider: {ok, text | error}}",
+        "exit_code": "0 = at least one provider answered, 1 = none answered"
+      }
+    },
+    {
+      "name": "claude_bridge",
+      "module": "tools/claude_bridge.py",
+      "test": "tools/test_claude_bridge.py",
+      "description": "Loop between a Claude chat (planner/reviewer, no tools) and Claude Code (executor) via the claude CLI until the chat declares FERTIG.",
+      "inputs": {
+        "goal": "string, required",
+        "--cwd": "working directory for both sides, default '.'",
+        "--max-rounds": "int, default 5",
+        "--permission-mode": "default | acceptEdits | plan (bypassPermissions is not allowed), default 'default'",
+        "--chat-backend": "cli (claude -p --tools \"\") | api (Messages API, needs --allow-paid), default cli",
+        "--allow-paid": "flag, required for --chat-backend api",
+        "--transcript": "optional path for a JSON transcript"
+      },
+      "outputs": {
+        "stdout": "final summary",
+        "transcript": "JSON {done, summary, turns[{round, instruction, result}]}",
+        "exit_code": "0 = goal declared done, 1 = stopped without FERTIG"
+      }
+    }
+  ]
+}
