@@ -28,6 +28,13 @@ MSG_BYE = "Bis später."
 MSG_EMPTY = "Ich habe nichts verstanden. Was soll ich JARVIS fragen?"
 MSG_UNREACHABLE = "Ich konnte JARVIS gerade nicht erreichen. Versuch es gleich nochmal."
 MSG_FORBIDDEN = "Dieser Skill ist nicht für diese Anfrage freigegeben."
+# Spoken when JARVIS_ENDPOINT is not configured yet, so the skill still works
+# out of the box (useful for testing before wiring up the real JARVIS backend).
+MSG_NO_BACKEND = (
+    "Ich habe verstanden: {text}. "
+    "JARVIS ist aber noch nicht verbunden. "
+    "Trag die Adresse von JARVIS in die Konfiguration ein, dann leite ich alles weiter."
+)
 
 
 class _Forbidden(Exception):
@@ -72,6 +79,11 @@ def _handle_intent(event, request):
     text = _extract_text(intent)
     if not text:
         return _response(MSG_EMPTY, reprompt=MSG_REPROMPT)
+
+    # Works out of the box: if no backend is configured yet, confirm what was
+    # heard instead of erroring, so the skill is testable before JARVIS exists.
+    if not os.environ.get("JARVIS_ENDPOINT"):
+        return _response(MSG_NO_BACKEND.format(text=text), reprompt=MSG_REPROMPT)
 
     try:
         reply, end = _ask_jarvis(text, _meta(event, name))

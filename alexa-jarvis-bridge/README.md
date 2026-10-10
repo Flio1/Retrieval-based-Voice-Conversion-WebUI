@@ -32,13 +32,37 @@ Der Handler ist **frameworklos** (nur Python‑Stdlib) und läuft an zwei Orten:
 
 ---
 
+## Schnellster Weg — ein Befehl (empfohlen)
+
+Als **Alexa‑hosted Skill**: Amazon stellt die Lambda kostenlos bereit, du brauchst
+**kein AWS‑Konto**. Nur Node.js + ASK CLI, dann:
+
+```bash
+npm install -g ask-cli      # einmalig
+cd alexa-jarvis-bridge
+./deploy.sh                 # öffnet beim ersten Mal den Amazon-Login
+```
+
+Der **einzige** manuelle Schritt ist der einmalige Browser‑Login in **dein** Amazon‑Konto
+(dasselbe, auf dem dein Echo registriert ist). Das kann niemand übernehmen, weil der
+Skill in dein Konto deployt wird. Danach läuft alles automatisch.
+
+Der Skill **funktioniert sofort — auch ohne JARVIS**: Solange `JARVIS_ENDPOINT` nicht
+gesetzt ist, bestätigt er nur, was er verstanden hat. Sobald du die JARVIS‑Adresse
+hinterlegst, leitet er alles weiter.
+
+---
+
 ## Dateien
 
 | Datei | Zweck |
 |---|---|
-| `interaction-model/de-DE.json` | Alexa Interaction Model (Invocation, Intents, deutsche Utterances) |
+| `deploy.sh` | Ein‑Befehl‑Deploy (Alexa‑hosted, kein AWS‑Konto nötig) |
+| `ask-resources.json` | ASK‑CLI‑Projektkonfiguration |
+| `skill-package/skill.json` | Skill‑Manifest (Name, Locale, privat) |
+| `skill-package/interactionModels/custom/de-DE.json` | Interaction Model (Invocation, Intents, deutsche Utterances) |
 | `lambda/handler.py` | Kernlogik: Alexa‑Request → JARVIS → Alexa‑Response (Stdlib‑only) |
-| `lambda/lambda_function.py` | AWS‑Lambda‑Einstiegspunkt |
+| `lambda/lambda_function.py` | Lambda‑Einstiegspunkt (auch für Alexa‑hosted) |
 | `lambda/local_server.py` | Optionaler Selbst‑Hosting‑Server (Test / Tunnel) |
 | `.env.example` | Vorlage für die Konfiguration |
 | `requirements.txt` | Keine Pflicht‑Abhängigkeiten (Stdlib reicht) |
@@ -73,15 +97,15 @@ und erwartet als Antwort JSON mit **einem** dieser Felder (in dieser Reihenfolge
 
 ---
 
-## Setup
+## Setup (manueller Weg — nur falls du *nicht* `deploy.sh` nutzt)
 
 ### 1. Skill anlegen
 1. [developer.amazon.com/alexa/console/ask](https://developer.amazon.com/alexa/console/ask) → **Create Skill**
 2. Model: **Custom**, Hosting: **Provision your own** (Lambda/eigener Endpoint)
 3. Im Reiter **Build → Interaction Model → JSON Editor** den Inhalt von
-   `interaction-model/de-DE.json` einfügen → **Save** → **Build Model**
+   `skill-package/interactionModels/custom/de-DE.json` einfügen → **Save** → **Build Model**
 
-### 2a. Backend auf AWS Lambda (empfohlen)
+### 2a. Backend auf AWS Lambda
 ```bash
 cd lambda
 zip -r ../jarvis-bridge.zip handler.py lambda_function.py
