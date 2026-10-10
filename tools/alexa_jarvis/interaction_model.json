@@ -1,0 +1,4 @@
+{"interactionModel":{"languageModel":{"invocationName":"jarvis","intents":[
+{"name":"AMAZON.StopIntent","samples":[]},{"name":"AMAZON.CancelIntent","samples":[]},
+{"name":"JarvisCommandIntent","slots":[{"name":"command","type":"AMAZON.SearchQuery"}],
+"samples":["{command}","sag {command}","führe {command} aus","mach {command}"]}]}}}
