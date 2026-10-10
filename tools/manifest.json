@@ -1,0 +1,7 @@
+{
+  "alexa_jarvis": {
+    "module": "tools/alexa_jarvis/bridge.py",
+    "input": "Alexa JSON request; env ALEXA_SKILL_ID, ALEXA_ALLOWED_USERS, JARVIS_URL/JARVIS_MODULE",
+    "output": "Alexa JSON response (spoken JARVIS reply)"
+  }
+}
