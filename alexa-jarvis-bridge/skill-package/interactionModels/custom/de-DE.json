@@ -1,0 +1,48 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "mein jarvis",
+      "intents": [
+        {
+          "name": "AskJarvisIntent",
+          "slots": [
+            {
+              "name": "query",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "frag {query}",
+            "frage {query}",
+            "sag ihm {query}",
+            "sag {query}",
+            "er soll {query}",
+            "ich will {query}",
+            "ich möchte {query}",
+            "nach {query}",
+            "ob {query}",
+            "wie {query}",
+            "was {query}"
+          ]
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        }
+      ],
+      "types": []
+    }
+  }
+}
