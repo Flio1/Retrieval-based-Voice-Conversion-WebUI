@@ -1,0 +1,46 @@
+{
+  "manifest": {
+    "manifestVersion": "1.0",
+    "publishingInformation": {
+      "locales": {
+        "de-DE": {
+          "name": "Mein JARVIS",
+          "summary": "Sprachbrücke zu deinem JARVIS-Assistenten.",
+          "description": "Leitet gesprochene Befehle an deine JARVIS-Instanz weiter und spricht die Antwort zurück. Reine Sprachinteraktion, kein Bildschirm-Mirroring.",
+          "examplePhrases": [
+            "Alexa, öffne mein jarvis",
+            "Alexa, frag mein jarvis nach dem wetter",
+            "Alexa, sag mein jarvis er soll das licht anschalten"
+          ],
+          "keywords": [
+            "jarvis",
+            "assistent",
+            "bridge"
+          ]
+        }
+      },
+      "isAvailableWorldwide": false,
+      "distributionCountries": [
+        "DE"
+      ],
+      "distributionMode": "PRIVATE",
+      "category": "ORGANIZERS_AND_ASSISTANTS"
+    },
+    "apis": {
+      "custom": {}
+    },
+    "privacyAndCompliance": {
+      "locales": {
+        "de-DE": {
+          "privacyPolicyUrl": "",
+          "termsOfUseUrl": ""
+        }
+      },
+      "allowsPurchases": false,
+      "usesPersonalInfo": false,
+      "isChildDirected": false,
+      "isExportCompliant": true,
+      "containsAds": false
+    }
+  }
+}

@@ -1,0 +1,4 @@
+# No third-party dependencies required — the handler uses only the Python stdlib.
+# This keeps the Lambda deployment package tiny and avoids build steps.
+#
+# Everything (urllib, json, http.server) ships with Python 3.
